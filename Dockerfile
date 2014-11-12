@@ -1,14 +1,19 @@
-FROM centos:centos6
+FROM centos:centos5
 MAINTAINER ryan.walker@rackspace.com 
 # Original author: Derek Olsen in https://github.com/someword/omnibus-centos
 
 #RUN rm /bin/sh && ln -s /bin/bash /bin/sh
 
-RUN rpm -ivh http://download.fedoraproject.org/pub/epel/6/$(arch)/epel-release-6-8.noarch.rpm
-RUN yum install -y centos-release-SCL
+RUN yum install -y wget
+RUN wget http://download.fedoraproject.org/pub/epel/5/x86_64/epel-release-5-4.noarch.rpm && \
+    rpm -Uvh epel-release-5-4.noarch.rpm
 RUN yum groupinstall -y 'Development Tools'
 
 RUN yum install -y \
+    libyaml-devel \
+    libffi-devel \
+    openssl-devel \
+    iconv-devel \
     fakeroot \
     tar \
     openssl-devel \
@@ -16,8 +21,28 @@ RUN yum install -y \
     perl-ExtUtils-MakeMaker \
     curl-devel \
     golang \
-    ruby193 \
-    ruby193-ruby-devel
+    gcc44 \
+    gcc44-c++ \
+    wget
+
+# Ruby
+RUN cd /usr/src && \
+    wget http://ftp.ruby-lang.org/pub/ruby/1.9/ruby-1.9.3-p194.tar.gz && \
+    tar xvzf ruby-1.9.3-p194.tar.gz && \
+    cd ruby-1.9.3-p194 && \
+    ./configure && \
+    make && \
+    make install
+
+ENV CC gcc44
+ENV CXX g++44
+
+# RubyGems
+RUN cd /usr/src && \
+    wget http://production.cf.rubygems.org/rubygems/rubygems-1.8.24.tgz && \
+    tar xvzf rubygems-1.8.24.tgz && \
+    cd rubygems-1.8.24 && \
+    ruby setup.rb
 
 # Work around git/go version issues on centos - https://twitter.com/gniemeyer/status/472318780472045568
 RUN yum remove -y git
@@ -27,17 +52,13 @@ RUN cd /usr/src && \
     tar xzf git-1.9.4.tar.gz && cd git-1.9.4 && \
     make prefix=/usr all && make prefix=/usr install
 
-RUN echo "export PATH=\${PATH}:/opt/rh/ruby193/root/usr/local/bin" | tee -a /opt/rh/ruby193/enable
-RUN source /opt/rh/ruby193/enable
-
-RUN cp /opt/rh/ruby193/enable /etc/profile.d/ruby193.sh
-
 RUN git config --global url."https://".insteadOf git://
 RUN git config --global user.email ryan.walker@rackspace.com
 RUN git config --global user.name "Ryan Walker"
 
 WORKDIR /
 
+RUN gem install bundler --no-rdoc --no-ri
 RUN /bin/bash -l -c "git clone https://github.com/ryandub/omnibus-ohai-solo.git && cd omnibus-ohai-solo && bundle install --binstubs"
 
 WORKDIR /omnibus-ohai-solo
