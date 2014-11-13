@@ -23,6 +23,9 @@ RUN yum install -y \
     golang \
     gcc44 \
     gcc44-c++ \
+    python26 \
+    python26-devel \
+    python26-virtualenv \
     wget
 
 # Ruby
@@ -62,3 +65,7 @@ RUN gem install bundler --no-rdoc --no-ri
 RUN /bin/bash -l -c "git clone https://github.com/ryandub/omnibus-ohai-solo.git && cd omnibus-ohai-solo && bundle install --binstubs"
 
 WORKDIR /omnibus-ohai-solo
+RUN virtualenv-2.6 venv
+ENV VIRTUAL_ENV /omnibus-ohai-solo/venv
+ENV PATH /omnibus-ohai-solo/venv/bin:$PATH
+
