@@ -1,8 +1,8 @@
 FROM centos:centos5
-MAINTAINER ryan.walker@rackspace.com 
+MAINTAINER ryan.walker@rackspace.com
 # Original author: Derek Olsen in https://github.com/someword/omnibus-centos
 
-#RUN rm /bin/sh && ln -s /bin/bash /bin/sh
+# RUN rm /bin/sh && ln -s /bin/bash /bin/sh
 
 RUN yum install -y wget
 RUN wget http://download.fedoraproject.org/pub/epel/5/x86_64/epel-release-5-4.noarch.rpm && \
@@ -25,7 +25,6 @@ RUN yum install -y \
     gcc44-c++ \
     python26 \
     python26-devel \
-    python26-virtualenv \
     wget
 
 # Ruby
@@ -49,6 +48,7 @@ RUN cd /usr/src && \
 
 # Work around git/go version issues on centos - https://twitter.com/gniemeyer/status/472318780472045568
 RUN yum remove -y git
+RUN yum clean all
 
 RUN cd /usr/src && \
     curl -o git-1.9.4.tar.gz https://www.kernel.org/pub/software/scm/git/git-1.9.4.tar.gz && \
@@ -64,8 +64,13 @@ WORKDIR /
 RUN gem install bundler --no-rdoc --no-ri
 RUN /bin/bash -l -c "git clone https://github.com/ryandub/omnibus-ohai-solo.git && cd omnibus-ohai-solo && bundle install --binstubs"
 
+# Install setuptools and virtualenv since they are no longer in EPEL for CentOS 5
+WORKDIR /tmp
+RUN wget --no-check-certificate http://pypi.python.org/packages/2.6/s/setuptools/setuptools-0.6c9-py2.6.egg#md5=ca37b1ff16fa2ede6e19383e7b59245a
+RUN sh setuptools-0.6c9-py2.6.egg && rm -f setuptools-0.6c9-py2.6.egg
+RUN easy_install virtualenv
+
 WORKDIR /omnibus-ohai-solo
 RUN virtualenv-2.6 venv
 ENV VIRTUAL_ENV /omnibus-ohai-solo/venv
 ENV PATH /omnibus-ohai-solo/venv/bin:$PATH
-
